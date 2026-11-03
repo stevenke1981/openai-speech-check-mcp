@@ -1,0 +1,15 @@
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { strict as assert } from 'node:assert';
+import { resolve } from 'node:path';
+await Bun.write('test-audio.wav', 'fixture');
+const client = new Client({name:'mock-check',version:'1'});
+await client.connect(new StdioClientTransport({command: process.execPath, args: ['--preload', resolve('mock-api.ts'), resolve('index.ts')], env: { ...process.env, OPENAI_API_KEY: 'mock-key' }}));
+const call = await client.callTool({name:'check_audio_against_script',arguments:{audio_path:resolve('test-audio.wav'),reference:'你好，世界！',languages:['zh-tw']}});
+assert.equal(call.isError, undefined);
+const data = JSON.parse(call.content[0].text);
+assert.equal(data.exact_match_after_normalization, true);
+assert.equal(data.model, 'gpt-transcribe');
+await client.close();
+await Bun.file('test-audio.wav').delete();
+console.log('Mock API upload and comparison passed; no network request made.');

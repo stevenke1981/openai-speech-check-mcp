@@ -1,0 +1,17 @@
+{
+  "name": "openai-speech-check-mcp",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "description": "Local MCP server for OpenAI speech transcription and script comparison",
+  "scripts": {
+    "start": "bun run index.ts",
+    "test": "bun run verify.ts && bun run verify-mock.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "diff": "^9.0.0",
+    "zod": "^4.6.7"
+  }
+}

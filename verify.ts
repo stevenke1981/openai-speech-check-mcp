@@ -1,0 +1,21 @@
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { strict as assert } from 'node:assert';
+delete process.env.OPENAI_API_KEY;
+const client = new Client({ name: 'local-check', version: '1.0.0' });
+await client.connect(new StdioClientTransport({ command: process.execPath, args: [new URL('./index.ts', import.meta.url).pathname.replace(/^\/(\w:)/, '$1')] }));
+const listed = await client.listTools();
+assert.deepEqual(listed.tools.map(t => t.name).sort(), ['check_audio_against_script', 'compare_transcripts']);
+const call = await client.callTool({ name: 'compare_transcripts', arguments: { reference: '你好，世界！', transcript: '你好世間' } });
+const parsed = JSON.parse(call.content[0].text);
+assert.equal(parsed.differences[0].type, 'substitution');
+assert.equal(parsed.differences[0].expected, '界');
+assert.equal(parsed.differences[0].actual, '間');
+const same = await client.callTool({ name: 'compare_transcripts', arguments: { reference: '你好，世界！', transcript: '你好 世界' } });
+assert.equal(JSON.parse(same.content[0].text).exact_match_after_normalization, true);
+const missing = await client.callTool({ name: 'check_audio_against_script', arguments: { audio_path: 'C:\\example.wav', reference: '你好' } });
+assert.equal(missing.isError, true);
+assert.match(missing.content[0].text, /OPENAI_API_KEY/);
+await client.close();
+console.log('MCP discovery, comparison, normalization, and missing-key checks passed.');
+
